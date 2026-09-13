@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Manuel Alejandro Gutiérrez Salazar" />
+    <title>Conversor de bases</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, system-ui, sans-serif;
+        background: #07111f;
+        color: #edf7ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: radial-gradient(circle at top left, #173b59, transparent 42%), #07111f;
+      }
+      .card {
+        width: min(720px, 100%);
+        padding: 42px;
+        border: 1px solid #28465e;
+        border-radius: 24px;
+        background: #0d1c2d;
+        box-shadow: 0 24px 70px #0008;
+      }
+      .eyebrow, .output span, .byte-view > span {
+        color: #74d9f5;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+      h1 { margin: 6px 0 10px; font-size: clamp(2rem, 6vw, 3.4rem); }
+      .intro { margin: 0 0 30px; color: #b7c9d8; line-height: 1.6; }
+      label { display: block; margin-bottom: 8px; font-weight: 700; }
+      .input-row { display: flex; gap: 12px; }
+      input, button { min-height: 52px; border-radius: 12px; font: inherit; }
+      input {
+        flex: 1;
+        min-width: 0;
+        padding: 0 16px;
+        border: 1px solid #3a566c;
+        background: #081522;
+        color: #fff;
+      }
+      button {
+        padding: 0 24px;
+        border: 0;
+        background: #24c5e8;
+        color: #05202b;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      button:hover { background: #75e6ff; }
+      #error { min-height: 22px; margin: 8px 0 4px; color: #ff8c9b; }
+      .result {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .output, .byte-view {
+        padding: 18px;
+        border: 1px solid #28465e;
+        border-radius: 14px;
+        background: #102337;
+      }
+      .output strong {
+        display: block;
+        margin-top: 7px;
+        font: 700 1.35rem "Courier New", monospace;
+      }
+      .byte-view { grid-column: 1 / -1; }
+      .bits {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .bit {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 1;
+        border-radius: 9px;
+        background: #081522;
+        color: #728ba0;
+        font: 800 1rem "Courier New", monospace;
+      }
+      .bit.on {
+        background: #24c5e8;
+        color: #05202b;
+        box-shadow: 0 0 18px #24c5e866;
+      }
+      @media (max-width: 560px) {
+        .card { padding: 28px; }
+        .input-row { flex-direction: column; }
+        .result { grid-template-columns: 1fr; }
+        .byte-view { grid-column: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <p class="eyebrow">Arquitectura de Computadoras</p>
+      <h1>Conversor de bases</h1>
+      <p class="intro">
+        Escribe un número decimal entre 0 y 255 para representarlo
+        como un byte y en notación hexadecimal.
+      </p>
+
+      <form id="converter" novalidate>
+        <label for="decimal">Número decimal</label>
+        <div class="input-row">
+          <input id="decimal" type="number" min="0" max="255" step="1"
+                 value="42" required aria-describedby="error" />
+          <button type="submit">Convertir</button>
+        </div>
+        <p id="error" role="alert"></p>
+      </form>
+
+      <section class="result" aria-live="polite">
+        <article class="output"><span>Decimal</span><strong id="decimalOut">42</strong></article>
+        <article class="output"><span>Binario</span><strong id="binaryOut">00101010</strong></article>
+        <article class="output"><span>Hexadecimal</span><strong id="hexOut">2A</strong></article>
+        <div class="byte-view">
+          <span>Representación visual del byte</span>
+          <div id="bits" class="bits"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.querySelector("#converter");
+      const decimalInput = document.querySelector("#decimal");
+      const error = document.querySelector("#error");
+      const decimalOut = document.querySelector("#decimalOut");
+      const binaryOut = document.querySelector("#binaryOut");
+      const hexOut = document.querySelector("#hexOut");
+      const bits = document.querySelector("#bits");
+
+      function convert(value) {
+        const number = Number(value);
+        const isValid = value.trim() !== "" && Number.isInteger(number)
+          && number >= 0 && number <= 255;
+
+        if (!isValid) {
+          error.textContent = "Ingresa un número entero entre 0 y 255.";
+          return;
+        }
+
+        const binary = number.toString(2).padStart(8, "0");
+        const hexadecimal = number.toString(16).toUpperCase().padStart(2, "0");
+        decimalOut.textContent = number;
+        binaryOut.textContent = binary;
+        hexOut.textContent = hexadecimal;
+        error.textContent = "";
+        bits.replaceChildren();
+
+        binary.split("").forEach((digit) => {
+          const bit = document.createElement("span");
+          bit.className = digit === "1" ? "bit on" : "bit";
+          bit.textContent = digit;
+          bits.appendChild(bit);
+        });
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        convert(decimalInput.value);
+      });
+      decimalInput.addEventListener("input", () => { error.textContent = ""; });
+      convert(decimalInput.value);
+    </script>
+  </body>
+</html>
